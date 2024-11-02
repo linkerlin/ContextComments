@@ -14,7 +14,7 @@
     position: fixed;
     background: white;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     padding: 15px;
     width: 300px;
@@ -23,13 +23,45 @@
     animation: fadeIn 0.2s ease-in-out;
 }
 
-.comment-popup-content {
-    max-height: 400px;
-    overflow-y: auto;
+.comment-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.author-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.author-info {
+    flex: 1;
+}
+
+.author-name {
+    display: block;
+    color: #2271b1;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.author-name:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.comment-date {
+    font-size: 12px;
+    color: #666;
 }
 
 .comment-text {
-    margin-bottom: 10px;
+    margin: 10px 0;
     line-height: 1.5;
     word-break: break-word;
 }
@@ -37,9 +69,9 @@
 .comment-meta {
     font-size: 12px;
     color: #666;
-    border-top: 1px solid #eee;
-    padding-top: 8px;
     margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
 }
 
 @keyframes fadeIn {

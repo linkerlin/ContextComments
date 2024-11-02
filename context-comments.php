@@ -102,7 +102,6 @@ class ContextComments {
             return;
         }
 
-        // 获取该文章的所有上下文评论
         $comments = get_comments(array(
             'post_id' => $post_id,
             'type' => 'context_comment',
@@ -110,11 +109,20 @@ class ContextComments {
         ));
 
         $formatted_comments = array_map(function($comment) {
+            $author_id = $comment->user_id;
+            $author_name = $comment->comment_author;
+            $author_url = $author_id ? get_author_posts_url($author_id) : $comment->comment_author_url;
+            
             return array(
                 'id' => $comment->comment_ID,
                 'context' => get_comment_meta($comment->comment_ID, 'context_text', true),
                 'comment' => $comment->comment_content,
-                'date' => $comment->comment_date
+                'date' => $comment->comment_date,
+                'author' => array(
+                    'name' => $author_name,
+                    'url' => $author_url,
+                    'avatar' => get_avatar_url($author_id ? $author_id : $comment->comment_author_email, array('size' => 32))
+                )
             );
         }, $comments);
 

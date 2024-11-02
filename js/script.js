@@ -129,7 +129,7 @@ class ContextComments {
     }
 
     showCommentPopup(element, comment) {
-        console.log('Showing comment popup:', comment); // 调试日志
+        console.log('Showing comment popup:', comment);
 
         this.hideAllPopups();
         
@@ -138,6 +138,13 @@ class ContextComments {
         
         popup.innerHTML = `
             <div class="comment-popup-content">
+                <div class="comment-header">
+                    <img class="author-avatar" src="${comment.author.avatar}" alt="${comment.author.name}" />
+                    <div class="author-info">
+                        <a href="${comment.author.url}" class="author-name" target="_blank">${comment.author.name}</a>
+                        <span class="comment-date">${this.formatDate(comment.date)}</span>
+                    </div>
+                </div>
                 <div class="comment-text">${this.escapeHtml(comment.comment)}</div>
                 <div class="comment-meta">
                     <span class="comment-id">评论 #${comment.id}</span>
@@ -167,11 +174,32 @@ class ContextComments {
         
         document.body.appendChild(popup);
         this.currentPopup = popup;
+    }
 
-        console.log('Popup created and positioned:', {
-            left: popup.style.left,
-            top: popup.style.top
-        });
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        // 如果是24小时内
+        if (diff < 24 * 60 * 60 * 1000) {
+            if (diff < 60 * 60 * 1000) {
+                // 不到1小时
+                const minutes = Math.floor(diff / (60 * 1000));
+                return `${minutes} 分钟前`;
+            } else {
+                // 不到24小时
+                const hours = Math.floor(diff / (60 * 60 * 1000));
+                return `${hours} 小时前`;
+            }
+        } else {
+            // 超过24小时，显示具体日期
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
     }
 
     hideAllPopups() {
