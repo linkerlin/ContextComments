@@ -3,11 +3,81 @@ class ContextComments {
         this.postId = this.getPostId();
         this.contentContainer = document.querySelector('.context-comments-content');
         this.init();
+        console.log('ContextComments initialized with postId:', this.postId);
     }
 
     init() {
         this.loadExistingComments();
-        // ... other init code ...
+        
+        this.contentContainer.addEventListener('mouseup', (e) => {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const selectedText = selection.toString().trim();
+
+            if (selectedText) {
+                this.handleTextSelection(e, range, selectedText);
+            }
+        });
+
+        console.log('Init completed, content container:', this.contentContainer);
+    }
+
+    handleTextSelection(event, range, selectedText) {
+        if (!selectedText || !contextCommentsObj.isLoggedIn) {
+            return;
+        }
+
+        const popup = document.createElement('div');
+        popup.className = 'comment-input-popup';
+        popup.innerHTML = `
+            <textarea placeholder="写下你的评论..."></textarea>
+            <button class="submit-comment">提交</button>
+            <button class="cancel-comment">取消</button>
+        `;
+
+        const rect = range.getBoundingClientRect();
+        popup.style.position = 'absolute';
+        popup.style.top = `${window.scrollY + rect.bottom + 5}px`;
+        popup.style.left = `${rect.left}px`;
+
+        document.body.appendChild(popup);
+
+        const textarea = popup.querySelector('textarea');
+        popup.querySelector('.submit-comment').addEventListener('click', () => {
+            const comment = textarea.value.trim();
+            if (comment) {
+                this.saveComment(range, comment);
+            }
+            popup.remove();
+        });
+
+        popup.querySelector('.cancel-comment').addEventListener('click', () => {
+            popup.remove();
+        });
+    }
+
+    saveComment(range, comment) {
+        const data = {
+            action: 'save_context_comment',
+            security: contextCommentsObj.security,
+            post_id: this.postId,
+            context: range.toString(),
+            comment: comment
+        };
+
+        fetch(contextCommentsObj.ajaxurl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                this.wrapRangeWithHighlight(range, result.data);
+            }
+        });
     }
 
     loadExistingComments() {
@@ -16,14 +86,32 @@ class ContextComments {
             return;
         }
 
+        console.log('Loading comments for post:', this.postId);
+
         fetch(`${contextCommentsObj.ajaxurl}?action=get_context_comments&post_id=${this.postId}`)
             .then(response => response.json())
             .then(result => {
+                console.log('Received comments:', result);
                 if (result.success && result.data) {
                     this.renderExistingComments(result.data);
                 }
             })
             .catch(error => console.error('Error loading comments:', error));
+    }
+
+    getPostId() {
+        const bodyClasses = document.body.className.split(' ');
+        const postIdClass = bodyClasses.find(className => className.startsWith('postid-'));
+        if (postIdClass) {
+            return postIdClass.replace('postid-', '');
+        }
+        
+        const articleElement = document.querySelector('article');
+        if (articleElement && articleElement.id) {
+            return articleElement.id.replace('post-', '');
+        }
+
+        return '';
     }
 
     renderExistingComments(comments) {
@@ -32,27 +120,20 @@ class ContextComments {
             return;
         }
 
-        // 获取文章内容的HTML
         let content = this.contentContainer.innerHTML;
 
-        // 对评论按context长度降序排序，避免短文本替换影响长文本
         comments.sort((a, b) => b.context.length - a.context.length);
 
         comments.forEach(comment => {
-            // 解码context（如果需要的话）
             const decodedContext = this.decodeHtmlEntities(comment.context);
             
-            // 创建高亮span的HTML
             const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${this.escapeHtml(comment.comment)}">${decodedContext}</span>`;
             
-            // 替换文本为高亮版本
             content = content.replace(decodedContext, highlightHtml);
         });
 
-        // 更新内容
         this.contentContainer.innerHTML = content;
 
-        // 添加点击事件监听器
         this.addClickListeners();
     }
 
@@ -70,14 +151,12 @@ class ContextComments {
         });
     }
 
-    // 辅助函数：HTML实体解码
     decodeHtmlEntities(text) {
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         return textarea.value;
     }
 
-    // 辅助函数：HTML转义
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -85,7 +164,6 @@ class ContextComments {
     }
 
     showCommentPopup(element, comment) {
-        // 隐藏其他可能存在的弹出框
         this.hideAllPopups();
         
         const popup = document.createElement('div');
@@ -97,7 +175,6 @@ class ContextComments {
             </div>
         `;
         
-        // 计算弹出框位置
         const rect = element.getBoundingClientRect();
         popup.style.top = `${window.scrollY + rect.bottom + 5}px`;
         popup.style.left = `${rect.left}px`;
@@ -105,7 +182,6 @@ class ContextComments {
         document.body.appendChild(popup);
         this.currentPopup = popup;
 
-        // 添加点击外部关闭弹出框
         document.addEventListener('click', (e) => {
             if (!popup.contains(e.target) && !element.contains(e.target)) {
                 this.hideAllPopups();
@@ -121,7 +197,6 @@ class ContextComments {
     }
 }
 
-// 确保在 DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     new ContextComments();
 }); 

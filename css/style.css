@@ -37,4 +37,25 @@
 .comment-form-popup textarea {
     width: 100%;
     min-height: 100px;
-} 
+}
+
+.comment-input-popup {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.comment-input-popup textarea {
+    width: 100%;
+    min-width: 200px;
+    min-height: 100px;
+    margin-bottom: 10px;
+}
+
+.comment-input-popup button {
+    margin-right: 10px;
+}
