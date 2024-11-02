@@ -50,7 +50,7 @@ class ContextComments {
     }
 
     handleTextSelection(selection, event) {
-        if (!this.isUserLoggedIn()) {
+        if (!contextCommentsObj.isLoggedIn) {
             window.location.href = contextCommentsObj.loginurl;
             return;
         }
@@ -119,7 +119,7 @@ class ContextComments {
     }
 
     getPostId() {
-        // 从页面获取文���ID的逻辑
+        // 从页面获取文ID的逻辑
     }
 
     isUserLoggedIn() {

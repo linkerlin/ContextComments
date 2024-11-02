@@ -23,7 +23,9 @@ class ContextComments {
             wp_localize_script('context-comments', 'contextCommentsObj', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'security' => wp_create_nonce('context-comments-nonce'),
-                'loginurl' => wp_login_url(get_permalink())
+                'loginurl' => wp_login_url(get_permalink()),
+                'isLoggedIn' => is_user_logged_in(),
+                'userId' => get_current_user_id()
             ));
         }
     }
@@ -31,8 +33,15 @@ class ContextComments {
     public function save_context_comment() {
         check_ajax_referer('context-comments-nonce', 'security');
         
+        error_log('User login status: ' . (is_user_logged_in() ? 'true' : 'false'));
+        error_log('User ID: ' . get_current_user_id());
+        
         if (!is_user_logged_in()) {
-            wp_send_json_error('请先登录');
+            wp_send_json_error(array(
+                'message' => '请先登录',
+                'code' => 'not_logged_in'
+            ));
+            exit;
         }
 
         $post_id = intval($_POST['post_id']);
