@@ -1,15 +1,16 @@
 class ContextComments {
     constructor() {
-        this.postId = this.getPostId();
-        this.contentContainer = document.querySelector('.context-comments-content');
-        
+        this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         if (!this.contentContainer) {
-            console.error('Content container not found');
+            console.error('Content container not found. Available classes:', 
+                document.body.innerHTML.match(/class="[^"]*"/g));
             return;
         }
+        console.log('Content container found:', this.contentContainer);
+        console.log('Content length:', this.contentContainer.innerHTML.length);
         
+        this.postId = this.getPostId();
         this.init();
-        console.log('ContextComments initialized with postId:', this.postId);
     }
 
     init() {
@@ -127,40 +128,55 @@ class ContextComments {
     }
 
     renderExistingComments(comments) {
-        console.log('Starting to render comments:', comments);
-
+        console.log('Starting to render comments');
+        
         if (!this.contentContainer) {
             console.error('Content container not found');
             return;
         }
 
         let content = this.contentContainer.innerHTML;
-        console.log('Original content length:', content.length);
-        
-        comments.sort((a, b) => b.context.length - a.context.length);
+        console.log('Original content:', {
+            length: content.length,
+            preview: content.substring(0, 100) + '...'
+        });
 
         comments.forEach(comment => {
             try {
                 const decodedContext = decodeURIComponent(JSON.parse('"' + comment.context.replace(/\"/g, '\\"') + '"'));
-                console.log('Looking for similar text to:', decodedContext);
+                console.log('Processing comment:', {
+                    id: comment.id,
+                    context: decodedContext,
+                    contextLength: decodedContext.length
+                });
 
-                const bestMatch = this.findBestMatch(decodedContext, content);
-                if (bestMatch) {
-                    console.log('Found match:', bestMatch.text, 'with similarity:', bestMatch.similarity);
-                    
-                    const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
-                    
-                    content = content.replace(bestMatch.text, highlightHtml);
+                if (content.includes(decodedContext)) {
+                    console.log('Found exact match');
+                    const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${decodedContext}</span>`;
+                    content = content.replace(decodedContext, highlightHtml);
                 } else {
-                    console.log('No match found above similarity threshold');
+                    console.log('No exact match, trying fuzzy match');
+                    const bestMatch = this.findBestMatch(decodedContext, content);
+                    if (bestMatch) {
+                        console.log('Found fuzzy match:', bestMatch);
+                        const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
+                        content = content.replace(bestMatch.text, highlightHtml);
+                    }
                 }
             } catch (e) {
-                console.error('Error processing comment:', e, comment);
+                console.error('Error processing comment:', e);
             }
         });
 
+        console.log('Processed content:', {
+            length: content.length,
+            preview: content.substring(0, 100) + '...'
+        });
+
         this.contentContainer.innerHTML = content;
-        this.addClickListeners();
+        
+        const highlights = this.contentContainer.querySelectorAll('.context-highlight');
+        console.log('Added highlights:', highlights.length);
     }
 
     findBestMatch(searchText, content) {

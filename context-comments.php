@@ -85,7 +85,13 @@ class ContextComments {
             return $content;
         }
         
-        return '<div class="context-comments-content">' . $content . '</div>';
+        error_log('Original content length: ' . strlen($content));
+        
+        $wrapped_content = '<div class="context-comments-content">' . $content . '</div>';
+        
+        error_log('Wrapped content length: ' . strlen($wrapped_content));
+        
+        return $wrapped_content;
     }
 
     public function get_context_comments() {
