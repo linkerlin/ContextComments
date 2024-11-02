@@ -25,10 +25,14 @@ class ContextComments {
         if (is_single()) {
             wp_enqueue_style('context-comments', plugins_url('css/style.css', __FILE__));
             wp_enqueue_script('context-comments', plugins_url('js/script.js', __FILE__), array('jquery'), '1.0', true);
+            
+            // 获取当前页面 URL 作为登录后的重定向地址
+            $current_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+            
             wp_localize_script('context-comments', 'contextCommentsObj', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'security' => wp_create_nonce('context-comments-nonce'),
-                'loginurl' => wp_login_url(get_permalink()),
+                'loginurl' => wp_login_url($current_url), // 设置登录后返回当前页面
                 'isLoggedIn' => is_user_logged_in(),
                 'userId' => get_current_user_id()
             ));

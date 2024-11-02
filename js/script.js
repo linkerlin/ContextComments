@@ -145,8 +145,19 @@ class ContextComments {
     }
 
     handleTextSelection(event, range, selectedText) {
-        console.log('Handling text selection:', selectedText);
+        console.log('Handling text selection, user logged in:', contextCommentsObj.isLoggedIn);
 
+        // 检查用户是否登录
+        if (!contextCommentsObj.isLoggedIn) {
+            // 保存当前 URL 到 localStorage，以便登录后返回
+            localStorage.setItem('contextCommentsReturnUrl', window.location.href);
+            
+            // 重定向到登录页面
+            window.location.href = contextCommentsObj.loginurl;
+            return;
+        }
+
+        // 以下是已登录用户的评论框逻辑
         const popup = document.createElement('div');
         popup.className = 'comment-input-popup';
         popup.innerHTML = `
