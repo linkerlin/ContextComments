@@ -74,15 +74,11 @@ class ContextComments {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                console.log('Highlight clicked:', {
-                    commentId: highlight.dataset.commentId,
-                    comment: highlight.dataset.comment
-                });
-
-                this.showCommentPopup(highlight, {
-                    id: highlight.dataset.commentId,
-                    comment: decodeURIComponent(highlight.dataset.comment)
-                });
+                // 获取评论ID
+                const commentId = highlight.dataset.commentId;
+                
+                // 从服务器获取完整的评论信息
+                this.fetchCommentDetails(commentId, highlight);
             }
         });
 
@@ -94,6 +90,29 @@ class ContextComments {
                 this.hideAllPopups();
             }
         });
+    }
+
+    fetchCommentDetails(commentId, element) {
+        fetch(`${contextCommentsObj.ajaxurl}?action=get_comment_details&comment_id=${commentId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    this.showCommentPopup(element, result.data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching comment details:', error);
+                // 如果获取详细信息失败，仍然显示基本信息
+                this.showCommentPopup(element, {
+                    id: commentId,
+                    comment: decodeURIComponent(element.dataset.comment),
+                    author: {
+                        name: '匿名用户',
+                        url: '#',
+                        avatar: 'https://www.gravatar.com/avatar/?d=mp'
+                    }
+                });
+            });
     }
 
     handleTextSelection(event, range, selectedText) {
@@ -135,14 +154,21 @@ class ContextComments {
         
         const popup = document.createElement('div');
         popup.className = 'comment-popup';
+
+        // 使用默认值处理可能缺失的作者信息
+        const author = comment.author || {
+            name: '匿名用户',
+            url: '#',
+            avatar: 'https://www.gravatar.com/avatar/?d=mp'
+        };
         
         popup.innerHTML = `
             <div class="comment-popup-content">
                 <div class="comment-header">
-                    <img class="author-avatar" src="${comment.author.avatar}" alt="${comment.author.name}" />
+                    <img class="author-avatar" src="${author.avatar}" alt="${author.name}" />
                     <div class="author-info">
-                        <a href="${comment.author.url}" class="author-name" target="_blank">${comment.author.name}</a>
-                        <span class="comment-date">${this.formatDate(comment.date)}</span>
+                        <a href="${author.url}" class="author-name" target="_blank">${author.name}</a>
+                        ${comment.date ? `<span class="comment-date">${this.formatDate(comment.date)}</span>` : ''}
                     </div>
                 </div>
                 <div class="comment-text">${this.escapeHtml(comment.comment)}</div>

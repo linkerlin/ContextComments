@@ -17,6 +17,8 @@ class ContextComments {
         
         add_action('wp_ajax_get_context_comments', array($this, 'get_context_comments'));
         add_action('wp_ajax_nopriv_get_context_comments', array($this, 'get_context_comments'));
+        add_action('wp_ajax_get_comment_details', array($this, 'get_comment_details'));
+        add_action('wp_ajax_nopriv_get_comment_details', array($this, 'get_comment_details'));
     }
 
     public function enqueue_scripts() {
@@ -127,6 +129,39 @@ class ContextComments {
         }, $comments);
 
         wp_send_json_success($formatted_comments);
+    }
+
+    public function get_comment_details() {
+        $comment_id = isset($_GET['comment_id']) ? intval($_GET['comment_id']) : 0;
+        
+        if (!$comment_id) {
+            wp_send_json_error('Invalid comment ID');
+            return;
+        }
+
+        $comment = get_comment($comment_id);
+        if (!$comment) {
+            wp_send_json_error('Comment not found');
+            return;
+        }
+
+        // 获取作者信息
+        $author_id = $comment->user_id;
+        $author_name = $comment->comment_author;
+        $author_url = $author_id ? get_author_posts_url($author_id) : $comment->comment_author_url;
+        
+        $comment_data = array(
+            'id' => $comment->comment_ID,
+            'comment' => $comment->comment_content,
+            'date' => $comment->comment_date,
+            'author' => array(
+                'name' => $author_name,
+                'url' => $author_url,
+                'avatar' => get_avatar_url($author_id ? $author_id : $comment->comment_author_email, array('size' => 32))
+            )
+        );
+
+        wp_send_json_success($comment_data);
     }
 }
 
