@@ -187,6 +187,125 @@ class ContextComments {
         return div.innerHTML;
     }
 
+    renderExistingComments(comments) {
+        console.log('Rendering comments:', comments);
+
+        if (!this.contentContainer) {
+            console.error('Content container not found');
+            return;
+        }
+
+        let content = this.contentContainer.innerHTML;
+        console.log('Original content length:', content.length);
+        
+        comments.forEach(comment => {
+            try {
+                const decodedContext = decodeURIComponent(JSON.parse('"' + comment.context.replace(/\"/g, '\\"') + '"'));
+                console.log('Looking for text:', decodedContext);
+
+                // 创建一个正则表达式来匹配文本，忽略 HTML 标签
+                const escapedContext = decodedContext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedContext, 'g');
+
+                if (content.includes(decodedContext)) {
+                    console.log('Found exact match');
+                    const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${decodedContext}</span>`;
+                    content = content.replace(decodedContext, highlightHtml);
+                } else {
+                    console.log('No exact match, trying fuzzy match');
+                    const bestMatch = this.findBestMatch(decodedContext, content);
+                    if (bestMatch) {
+                        console.log('Found fuzzy match:', bestMatch);
+                        const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
+                        content = content.replace(bestMatch.text, highlightHtml);
+                    }
+                }
+            } catch (e) {
+                console.error('Error processing comment:', e);
+            }
+        });
+
+        this.contentContainer.innerHTML = content;
+        console.log('Highlights added:', this.contentContainer.querySelectorAll('.context-highlight').length);
+    }
+
+    findBestMatch(searchText, content) {
+        console.log('Finding best match for:', searchText);
+        
+        const searchChars = Array.from(searchText);
+        const windowSize = searchChars.length;
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        const SIMILARITY_THRESHOLD = 0.8; // 80% 相似度阈值
+
+        for (let i = 0; i < content.length - windowSize + 1; i++) {
+            const windowText = content.substr(i, windowSize);
+            const similarity = this.calculateSimilarity(searchText, windowText);
+
+            if (similarity > SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = {
+                    text: windowText,
+                    similarity: similarity
+                };
+                console.log('New best match found:', {
+                    text: windowText,
+                    similarity: similarity
+                });
+            }
+        }
+
+        return bestMatch;
+    }
+
+    calculateSimilarity(str1, str2) {
+        if (str1.length !== str2.length) return 0;
+
+        let matches = 0;
+        for (let i = 0; i < str1.length; i++) {
+            if (str1[i] === str2[i]) {
+                matches++;
+            }
+        }
+
+        return matches / str1.length;
+    }
+
+    saveComment(range, comment) {
+        const data = {
+            action: 'save_context_comment',
+            security: contextCommentsObj.security,
+            post_id: this.postId,
+            context: range.toString(),
+            comment: comment
+        };
+
+        fetch(contextCommentsObj.ajaxurl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // 创建高亮
+                const highlightHtml = `<span class="context-highlight" data-comment-id="${result.data.comment_id}" data-comment="${encodeURIComponent(result.data.comment)}">${result.data.context}</span>`;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = highlightHtml;
+                const highlightElement = tempDiv.firstChild;
+                
+                range.deleteContents();
+                range.insertNode(highlightElement);
+                
+                // 重新添加事件监听器
+                this.setupEventListeners();
+            }
+        })
+        .catch(error => console.error('Error saving comment:', error));
+    }
+
     // ... 其他现有方法 ...
 }
 
