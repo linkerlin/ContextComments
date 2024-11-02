@@ -115,21 +115,30 @@ class ContextComments {
     }
 
     renderExistingComments(comments) {
+        console.log('Rendering comments:', comments);
+
         if (!this.contentContainer) {
             console.error('Content container not found');
             return;
         }
 
         let content = this.contentContainer.innerHTML;
-
+        
         comments.sort((a, b) => b.context.length - a.context.length);
 
         comments.forEach(comment => {
-            const decodedContext = this.decodeHtmlEntities(comment.context);
-            
-            const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${this.escapeHtml(comment.comment)}">${decodedContext}</span>`;
-            
-            content = content.replace(decodedContext, highlightHtml);
+            try {
+                const decodedContext = decodeURIComponent(JSON.parse('"' + comment.context.replace(/\"/g, '\\"') + '"'));
+                console.log('Looking for text:', decodedContext);
+
+                const regex = new RegExp(decodedContext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                
+                const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${decodedContext}</span>`;
+                
+                content = content.replace(regex, highlightHtml);
+            } catch (e) {
+                console.error('Error processing comment:', e);
+            }
         });
 
         this.contentContainer.innerHTML = content;
@@ -142,25 +151,14 @@ class ContextComments {
         highlights.forEach(highlight => {
             highlight.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const comment = {
-                    id: highlight.dataset.commentId,
-                    comment: highlight.dataset.comment
-                };
-                this.showCommentPopup(highlight, comment);
+                const commentId = highlight.dataset.commentId;
+                const comment = decodeURIComponent(highlight.dataset.comment);
+                this.showCommentPopup(highlight, {
+                    id: commentId,
+                    comment: comment
+                });
             });
         });
-    }
-
-    decodeHtmlEntities(text) {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        return textarea.value;
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     showCommentPopup(element, comment) {
@@ -169,7 +167,7 @@ class ContextComments {
         const popup = document.createElement('div');
         popup.className = 'comment-popup';
         popup.innerHTML = `
-            <div class="comment-content">${this.escapeHtml(comment.comment)}</div>
+            <div class="comment-content">${comment.comment}</div>
             <div class="comment-meta">
                 <small>评论 ID: ${comment.id}</small>
             </div>
