@@ -129,13 +129,16 @@ class ContextComments {
         comments.forEach(comment => {
             try {
                 const decodedContext = decodeURIComponent(JSON.parse('"' + comment.context.replace(/\"/g, '\\"') + '"'));
-                console.log('Looking for text:', decodedContext);
+                console.log('Looking for similar text to:', decodedContext);
 
-                const regex = new RegExp(decodedContext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                
-                const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${decodedContext}</span>`;
-                
-                content = content.replace(regex, highlightHtml);
+                const bestMatch = this.findBestMatch(decodedContext, content);
+                if (bestMatch) {
+                    console.log('Found match:', bestMatch.text, 'with similarity:', bestMatch.similarity);
+                    
+                    const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
+                    
+                    content = content.replace(bestMatch.text, highlightHtml);
+                }
             } catch (e) {
                 console.error('Error processing comment:', e);
             }
@@ -144,6 +147,42 @@ class ContextComments {
         this.contentContainer.innerHTML = content;
 
         this.addClickListeners();
+    }
+
+    findBestMatch(searchText, content) {
+        const searchChars = Array.from(searchText);
+        
+        const windowSize = searchChars.length;
+        let bestMatch = null;
+        let bestSimilarity = 0;
+
+        for (let i = 0; i < content.length - windowSize + 1; i++) {
+            const windowText = content.substr(i, windowSize);
+            const similarity = this.calculateSimilarity(searchText, windowText);
+
+            if (similarity > 0.9 && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = {
+                    text: windowText,
+                    similarity: similarity
+                };
+            }
+        }
+
+        return bestMatch;
+    }
+
+    calculateSimilarity(str1, str2) {
+        if (str1.length !== str2.length) return 0;
+
+        let matches = 0;
+        for (let i = 0; i < str1.length; i++) {
+            if (str1[i] === str2[i]) {
+                matches++;
+            }
+        }
+
+        return matches / str1.length;
     }
 
     addClickListeners() {
