@@ -11,6 +11,7 @@ class ContextComments {
         
         this.postId = this.getPostId();
         this.init();
+        this.currentPopup = null;
     }
 
     init() {
@@ -236,44 +237,71 @@ class ContextComments {
     }
 
     addClickListeners() {
+        console.log('Adding click listeners to highlights');
         const highlights = document.querySelectorAll('.context-highlight');
+        
         highlights.forEach(highlight => {
             highlight.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
+                
                 const commentId = highlight.dataset.commentId;
                 const comment = decodeURIComponent(highlight.dataset.comment);
+                
+                console.log('Highlight clicked:', { commentId, comment });
+                
                 this.showCommentPopup(highlight, {
                     id: commentId,
                     comment: comment
                 });
             });
         });
+
+        // 添加点击文档其他地方关闭弹出框的功能
+        document.addEventListener('click', (e) => {
+            if (this.currentPopup && !this.currentPopup.contains(e.target) && 
+                !e.target.classList.contains('context-highlight')) {
+                this.hideAllPopups();
+            }
+        });
     }
 
     showCommentPopup(element, comment) {
+        // 先隐藏其他可能存在的弹出框
         this.hideAllPopups();
         
         const popup = document.createElement('div');
         popup.className = 'comment-popup';
+        
+        // 使用模板字符串创建弹出框内容
         popup.innerHTML = `
-            <div class="comment-content">${comment.comment}</div>
-            <div class="comment-meta">
-                <small>评论 ID: ${comment.id}</small>
+            <div class="comment-popup-content">
+                <div class="comment-text">${this.escapeHtml(comment.comment)}</div>
+                <div class="comment-meta">
+                    <span class="comment-id">评论 #${comment.id}</span>
+                </div>
             </div>
         `;
-        
+
+        // 计算位置
         const rect = element.getBoundingClientRect();
-        popup.style.top = `${window.scrollY + rect.bottom + 5}px`;
-        popup.style.left = `${rect.left}px`;
+        const windowWidth = window.innerWidth;
         
+        // 设置弹出框样式和位置
+        popup.style.position = 'fixed';
+        
+        // 判断是否有足够空间在右侧显示
+        if (rect.right + 300 < windowWidth) { // 300px 是弹出框的预计宽度
+            popup.style.left = `${rect.right + 10}px`; // 在高亮文本右侧显示
+        } else {
+            popup.style.left = `${rect.left - 310}px`; // 在高亮文本左侧显示
+        }
+        
+        popup.style.top = `${rect.top}px`;
+        
+        // 添加到文档中
         document.body.appendChild(popup);
         this.currentPopup = popup;
-
-        document.addEventListener('click', (e) => {
-            if (!popup.contains(e.target) && !element.contains(e.target)) {
-                this.hideAllPopups();
-            }
-        });
     }
 
     hideAllPopups() {
@@ -281,6 +309,12 @@ class ContextComments {
             this.currentPopup.remove();
             this.currentPopup = null;
         }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 

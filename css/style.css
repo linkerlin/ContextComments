@@ -3,59 +3,61 @@
     cursor: pointer;
     padding: 0 2px;
     border-bottom: 2px solid #ffc107;
+    transition: background-color 0.2s;
+}
+
+.context-highlight:hover {
+    background-color: #ffe69c;
 }
 
 .comment-popup {
-    position: absolute;
+    position: fixed;
     background: white;
     border: 1px solid #ddd;
-    padding: 10px;
     border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 15px;
+    width: 300px;
     max-width: 300px;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-in-out;
 }
 
-.comment-content {
-    margin-bottom: 5px;
+.comment-popup-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.comment-text {
+    margin-bottom: 10px;
+    line-height: 1.5;
+    word-break: break-word;
 }
 
 .comment-meta {
     font-size: 12px;
     color: #666;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+    margin-top: 8px;
 }
 
-.comment-form-popup {
-    position: absolute;
-    background: white;
-    padding: 15px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    border-radius: 5px;
-    z-index: 1000;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.comment-form-popup textarea {
-    width: 100%;
-    min-height: 100px;
-}
-
-.comment-input-popup {
-    position: absolute;
-    background: white;
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000;
-}
-
-.comment-input-popup textarea {
-    width: 200px;
-    height: 100px;
-    margin-bottom: 10px;
-}
-
-.comment-input-popup button {
-    margin-right: 10px;
-    padding: 5px 10px;
+/* 添加响应式样式 */
+@media (max-width: 768px) {
+    .comment-popup {
+        width: 90%;
+        left: 5% !important;
+        right: 5% !important;
+    }
 }
