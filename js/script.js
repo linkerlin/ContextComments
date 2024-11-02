@@ -2,10 +2,51 @@ class ContextComments {
     constructor() {
         this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         this.currentPopup = null;
-        this.init();
-        
-        // 移除 mouseup 事件监听器，改用 click 事件
+        this.postId = this.getPostId();
+
+        if (!this.contentContainer) {
+            console.error('Content container not found');
+            return;
+        }
+
+        console.log('ContextComments initialized with:', {
+            container: this.contentContainer,
+            postId: this.postId
+        });
+
         this.setupEventListeners();
+        this.loadExistingComments();
+    }
+
+    getPostId() {
+        const bodyClasses = document.body.className.split(' ');
+        const postIdClass = bodyClasses.find(className => className.startsWith('postid-'));
+        if (postIdClass) {
+            return postIdClass.replace('postid-', '');
+        }
+        
+        const articleElement = document.querySelector('article');
+        if (articleElement && articleElement.id) {
+            return articleElement.id.replace('post-', '');
+        }
+
+        return '';
+    }
+
+    loadExistingComments() {
+        if (!this.postId) {
+            console.error('Post ID not found');
+            return;
+        }
+
+        fetch(`${contextCommentsObj.ajaxurl}?action=get_context_comments&post_id=${this.postId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success && result.data) {
+                    this.renderExistingComments(result.data);
+                }
+            })
+            .catch(error => console.error('Error loading comments:', error));
     }
 
     setupEventListeners() {
@@ -33,7 +74,7 @@ class ContextComments {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                console.log('Highlight clicked, data:', {
+                console.log('Highlight clicked:', {
                     commentId: highlight.dataset.commentId,
                     comment: highlight.dataset.comment
                 });
@@ -52,6 +93,38 @@ class ContextComments {
                 !e.target.closest('.context-highlight')) {
                 this.hideAllPopups();
             }
+        });
+    }
+
+    handleTextSelection(event, range, selectedText) {
+        console.log('Handling text selection:', selectedText);
+
+        const popup = document.createElement('div');
+        popup.className = 'comment-input-popup';
+        popup.innerHTML = `
+            <textarea placeholder="写下你的评论..."></textarea>
+            <button class="submit-comment">提交</button>
+            <button class="cancel-comment">取消</button>
+        `;
+
+        const rect = range.getBoundingClientRect();
+        popup.style.position = 'absolute';
+        popup.style.top = `${window.scrollY + rect.bottom + 5}px`;
+        popup.style.left = `${rect.left}px`;
+
+        document.body.appendChild(popup);
+
+        const textarea = popup.querySelector('textarea');
+        popup.querySelector('.submit-comment').addEventListener('click', () => {
+            const comment = textarea.value.trim();
+            if (comment) {
+                this.saveComment(range, comment);
+            }
+            popup.remove();
+        });
+
+        popup.querySelector('.cancel-comment').addEventListener('click', () => {
+            popup.remove();
         });
     }
 
@@ -117,6 +190,7 @@ class ContextComments {
     // ... 其他现有方法 ...
 }
 
+// 确保在 DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     new ContextComments();
 }); 
