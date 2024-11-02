@@ -2,6 +2,12 @@ class ContextComments {
     constructor() {
         this.postId = this.getPostId();
         this.contentContainer = document.querySelector('.context-comments-content');
+        
+        if (!this.contentContainer) {
+            console.error('Content container not found');
+            return;
+        }
+        
         this.init();
         console.log('ContextComments initialized with postId:', this.postId);
     }
@@ -10,20 +16,26 @@ class ContextComments {
         this.loadExistingComments();
         
         this.contentContainer.addEventListener('mouseup', (e) => {
+            console.log('Mouse up event triggered');
             const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            
             const range = selection.getRangeAt(0);
             const selectedText = selection.toString().trim();
+            
+            console.log('Selected text:', selectedText);
 
             if (selectedText) {
                 this.handleTextSelection(e, range, selectedText);
             }
         });
-
-        console.log('Init completed, content container:', this.contentContainer);
     }
 
     handleTextSelection(event, range, selectedText) {
-        if (!selectedText || !contextCommentsObj.isLoggedIn) {
+        console.log('Handling text selection:', selectedText);
+        console.log('Is logged in:', contextCommentsObj.isLoggedIn);
+
+        if (!selectedText) {
             return;
         }
 
@@ -115,7 +127,7 @@ class ContextComments {
     }
 
     renderExistingComments(comments) {
-        console.log('Rendering comments:', comments);
+        console.log('Starting to render comments:', comments);
 
         if (!this.contentContainer) {
             console.error('Content container not found');
@@ -123,6 +135,7 @@ class ContextComments {
         }
 
         let content = this.contentContainer.innerHTML;
+        console.log('Original content length:', content.length);
         
         comments.sort((a, b) => b.context.length - a.context.length);
 
@@ -138,34 +151,44 @@ class ContextComments {
                     const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
                     
                     content = content.replace(bestMatch.text, highlightHtml);
+                } else {
+                    console.log('No match found above similarity threshold');
                 }
             } catch (e) {
-                console.error('Error processing comment:', e);
+                console.error('Error processing comment:', e, comment);
             }
         });
 
         this.contentContainer.innerHTML = content;
-
         this.addClickListeners();
     }
 
     findBestMatch(searchText, content) {
+        console.log('Finding best match for:', searchText);
+        console.log('Content length:', content.length);
+
         const searchChars = Array.from(searchText);
-        
         const windowSize = searchChars.length;
         let bestMatch = null;
         let bestSimilarity = 0;
+
+        const SIMILARITY_THRESHOLD = 0.8;
 
         for (let i = 0; i < content.length - windowSize + 1; i++) {
             const windowText = content.substr(i, windowSize);
             const similarity = this.calculateSimilarity(searchText, windowText);
 
-            if (similarity > 0.9 && similarity > bestSimilarity) {
+            if (similarity > SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
                 bestSimilarity = similarity;
                 bestMatch = {
                     text: windowText,
                     similarity: similarity
                 };
+                console.log('New best match found:', {
+                    text: windowText,
+                    similarity: similarity,
+                    position: i
+                });
             }
         }
 
@@ -176,13 +199,24 @@ class ContextComments {
         if (str1.length !== str2.length) return 0;
 
         let matches = 0;
-        for (let i = 0; i < str1.length; i++) {
+        let total = str1.length;
+
+        for (let i = 0; i < total; i++) {
             if (str1[i] === str2[i]) {
                 matches++;
             }
         }
 
-        return matches / str1.length;
+        const similarity = matches / total;
+        if (similarity > 0.7) {
+            console.log('High similarity found:', {
+                text1: str1,
+                text2: str2,
+                similarity: similarity
+            });
+        }
+
+        return similarity;
     }
 
     addClickListeners() {
