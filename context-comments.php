@@ -14,6 +14,9 @@ class ContextComments {
         add_action('wp_ajax_save_context_comment', array($this, 'save_context_comment'));
         add_action('wp_ajax_nopriv_save_context_comment', array($this, 'handle_unauthorized'));
         add_filter('the_content', array($this, 'modify_post_content'));
+        
+        add_action('wp_ajax_get_context_comments', array($this, 'get_context_comments'));
+        add_action('wp_ajax_nopriv_get_context_comments', array($this, 'get_context_comments'));
     }
 
     public function enqueue_scripts() {
@@ -103,7 +106,7 @@ class ContextComments {
         $formatted_comments = array_map(function($comment) {
             return array(
                 'id' => $comment->comment_ID,
-                'context' => get_comment_meta($comment->comment_ID, 'context', true),
+                'context' => get_comment_meta($comment->comment_ID, 'context_text', true),
                 'comment' => $comment->comment_content,
                 'date' => $comment->comment_date
             );
