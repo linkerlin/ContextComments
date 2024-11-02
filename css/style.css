@@ -1,0 +1,30 @@
+.context-highlight {
+    border-bottom: 2px solid #ffeb3b;
+    cursor: pointer;
+    position: relative;
+}
+
+.comment-popup {
+    position: fixed;
+    right: 20px;
+    background: white;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+    max-width: 300px;
+    z-index: 1000;
+}
+
+.comment-form-popup {
+    position: absolute;
+    background: white;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.comment-form-popup textarea {
+    width: 100%;
+    min-height: 100px;
+} 
