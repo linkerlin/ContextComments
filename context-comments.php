@@ -84,6 +84,33 @@ class ContextComments {
         
         return '<div class="context-comments-content">' . $content . '</div>';
     }
+
+    public function get_context_comments() {
+        $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
+        
+        if (!$post_id) {
+            wp_send_json_error('Invalid post ID');
+            return;
+        }
+
+        // 获取该文章的所有上下文评论
+        $comments = get_comments(array(
+            'post_id' => $post_id,
+            'type' => 'context_comment',
+            'status' => 'approve'
+        ));
+
+        $formatted_comments = array_map(function($comment) {
+            return array(
+                'id' => $comment->comment_ID,
+                'context' => get_comment_meta($comment->comment_ID, 'context', true),
+                'comment' => $comment->comment_content,
+                'date' => $comment->comment_date
+            );
+        }, $comments);
+
+        wp_send_json_success($formatted_comments);
+    }
 }
 
 new ContextComments(); 

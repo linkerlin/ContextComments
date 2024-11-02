@@ -1,13 +1,14 @@
 class ContextComments {
     constructor() {
+        this.postId = this.getPostId();
         this.init();
         this.bindEvents();
-        this.loadComments();
     }
 
     init() {
         this.article = document.querySelector('.entry-content');
         this.currentPopup = null;
+        this.loadExistingComments();
     }
 
     bindEvents() {
@@ -32,12 +33,55 @@ class ContextComments {
         }, 200));
     }
 
-    loadComments() {
-        fetch(`${contextCommentsObj.ajaxurl}?action=get_context_comments&post_id=${this.getPostId()}`)
+    loadExistingComments() {
+        if (!this.postId) {
+            console.error('Post ID not found');
+            return;
+        }
+
+        fetch(`${contextCommentsObj.ajaxurl}?action=get_context_comments&post_id=${this.postId}`)
             .then(response => response.json())
-            .then(comments => {
-                this.highlightComments(comments);
-            });
+            .then(result => {
+                if (result.success) {
+                    this.renderExistingComments(result.data);
+                }
+            })
+            .catch(error => console.error('Error loading comments:', error));
+    }
+
+    saveComment(range, comment) {
+        if (!this.postId) {
+            console.error('Post ID not found');
+            return;
+        }
+
+        const data = {
+            action: 'save_context_comment',
+            security: contextCommentsObj.security,
+            post_id: this.postId,
+            context: range.toString(),
+            comment: comment
+        };
+
+        fetch(contextCommentsObj.ajaxurl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const newComment = {
+                    id: result.data.comment_id,
+                    context: result.data.context,
+                    comment: result.data.comment
+                };
+                
+                this.wrapRangeWithHighlight(range, newComment);
+            }
+        });
     }
 
     highlightComments(comments) {
@@ -78,36 +122,6 @@ class ContextComments {
             const comment = form.querySelector('textarea').value;
             this.saveComment(range, comment);
             form.remove();
-        });
-    }
-
-    saveComment(range, comment) {
-        const data = {
-            action: 'save_context_comment',
-            security: contextCommentsObj.security,
-            post_id: this.getPostId(),
-            context: range.toString(),
-            comment: comment
-        };
-
-        fetch(contextCommentsObj.ajaxurl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                const newComment = {
-                    id: result.data.comment_id,
-                    context: result.data.context,
-                    comment: result.data.comment
-                };
-                
-                this.wrapRangeWithHighlight(range, newComment);
-            }
         });
     }
 
@@ -166,7 +180,22 @@ class ContextComments {
     }
 
     getPostId() {
-        // 从页面获取文ID的逻辑
+        // 从 body 标签的 class 中获取 post ID
+        const bodyClasses = document.body.className.split(' ');
+        const postIdClass = bodyClasses.find(className => className.startsWith('postid-'));
+        if (postIdClass) {
+            return postIdClass.replace('postid-', '');
+        }
+        
+        // 备选方案：从文章容器中获取
+        const articleElement = document.querySelector('article');
+        if (articleElement && articleElement.id) {
+            return articleElement.id.replace('post-', '');
+        }
+
+        // 如果都没有找到，从 URL 中获取
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('p') || '';
     }
 
     isUserLoggedIn() {
