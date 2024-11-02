@@ -2,6 +2,7 @@ class ContextComments {
     constructor() {
         this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         this.currentPopup = null;
+        this.hoverTimer = null;
         this.postId = this.getPostId();
 
         if (!this.contentContainer) {
@@ -67,18 +68,41 @@ class ContextComments {
             }
         });
 
-        // 处理高亮文本的点击
+        // 处理高亮文本的点击和悬停
         this.contentContainer.addEventListener('click', (e) => {
             const highlight = e.target.closest('.context-highlight');
             if (highlight) {
                 e.preventDefault();
                 e.stopPropagation();
+                this.handleHighlightInteraction(highlight);
+            }
+        });
+
+        // 添加鼠标悬停事件
+        this.contentContainer.addEventListener('mouseover', (e) => {
+            const highlight = e.target.closest('.context-highlight');
+            if (highlight) {
+                // 清除之前的计时器
+                if (this.hoverTimer) {
+                    clearTimeout(this.hoverTimer);
+                }
                 
-                // 获取评论ID
-                const commentId = highlight.dataset.commentId;
-                
-                // 从服务器获取完整的评论信息
-                this.fetchCommentDetails(commentId, highlight);
+                // 设置新的计时器
+                this.hoverTimer = setTimeout(() => {
+                    this.handleHighlightInteraction(highlight);
+                }, 1000); // 1秒延迟
+            }
+        });
+
+        // 添加鼠标移出事件
+        this.contentContainer.addEventListener('mouseout', (e) => {
+            const highlight = e.target.closest('.context-highlight');
+            if (highlight) {
+                // 清除计时器
+                if (this.hoverTimer) {
+                    clearTimeout(this.hoverTimer);
+                    this.hoverTimer = null;
+                }
             }
         });
 
@@ -90,6 +114,11 @@ class ContextComments {
                 this.hideAllPopups();
             }
         });
+    }
+
+    handleHighlightInteraction(highlight) {
+        const commentId = highlight.dataset.commentId;
+        this.fetchCommentDetails(commentId, highlight);
     }
 
     fetchCommentDetails(commentId, element) {

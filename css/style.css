@@ -3,11 +3,28 @@
     cursor: pointer;
     padding: 0 2px;
     border-bottom: 2px solid #ffc107;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .context-highlight:hover {
     background-color: #ffe69c;
+}
+
+/* 添加加载指示器 */
+.context-highlight::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    height: 2px;
+    background-color: #ffc107;
+    width: 0;
+    transition: width 1s linear;
+}
+
+.context-highlight:hover::after {
+    width: 100%;
 }
 
 .comment-popup {
@@ -21,6 +38,12 @@
     max-width: 300px;
     z-index: 1000;
     animation: fadeIn 0.2s ease-in-out;
+    pointer-events: auto; /* 确保弹出框可以接收鼠标事件 */
+}
+
+/* 当鼠标悬停在弹出框上时保持显示 */
+.comment-popup:hover {
+    display: block;
 }
 
 .comment-header {
