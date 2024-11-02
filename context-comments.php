@@ -63,6 +63,18 @@ class ContextComments {
             wp_send_json_error('保存评论失败');
         }
     }
+
+    public function handle_unauthorized() {
+        wp_send_json_error('请先登录后再评论');
+    }
+
+    public function modify_post_content($content) {
+        if (!is_single()) {
+            return $content;
+        }
+        
+        return '<div class="context-comments-content">' . $content . '</div>';
+    }
 }
 
 new ContextComments(); 
