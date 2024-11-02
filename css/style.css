@@ -1,18 +1,28 @@
 .context-highlight {
-    border-bottom: 2px solid #ffeb3b;
+    background-color: #fff3cd;
     cursor: pointer;
-    position: relative;
+    padding: 0 2px;
+    border-bottom: 2px solid #ffc107;
 }
 
 .comment-popup {
-    position: fixed;
-    right: 20px;
+    position: absolute;
     background: white;
-    padding: 15px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    border-radius: 5px;
-    max-width: 300px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     z-index: 1000;
+    max-width: 300px;
+}
+
+.comment-content {
+    margin-bottom: 5px;
+}
+
+.comment-meta {
+    font-size: 12px;
+    color: #666;
 }
 
 .comment-form-popup {

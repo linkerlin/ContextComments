@@ -100,9 +100,56 @@ class ContextComments {
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                this.highlightComments([result.comment]);
+                const newComment = {
+                    id: result.data.comment_id,
+                    context: result.data.context,
+                    comment: result.data.comment
+                };
+                
+                this.wrapRangeWithHighlight(range, newComment);
             }
         });
+    }
+
+    wrapRangeWithHighlight(range, comment) {
+        const highlight = document.createElement('span');
+        highlight.className = 'context-highlight';
+        highlight.dataset.commentId = comment.id;
+        highlight.dataset.comment = comment.comment;
+        
+        range.surroundContents(highlight);
+        
+        highlight.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showCommentPopup(highlight, comment);
+        });
+    }
+
+    showCommentPopup(element, comment) {
+        this.hideAllPopups();
+        
+        const popup = document.createElement('div');
+        popup.className = 'comment-popup';
+        popup.innerHTML = `
+            <div class="comment-content">${comment.comment}</div>
+            <div class="comment-meta">
+                <small>评论 ID: ${comment.id}</small>
+            </div>
+        `;
+        
+        const rect = element.getBoundingClientRect();
+        popup.style.top = `${window.scrollY + rect.bottom + 5}px`;
+        popup.style.left = `${rect.left}px`;
+        
+        document.body.appendChild(popup);
+        this.currentPopup = popup;
+    }
+
+    hideAllPopups() {
+        if (this.currentPopup) {
+            this.currentPopup.remove();
+            this.currentPopup = null;
+        }
     }
 
     // 辅助方法
