@@ -6,44 +6,35 @@ class ContextComments {
         this.escPressCount = 0;
         this.escTimeout = null;
 
-        this.setupEscKeyListener();
+        this.handleEsc = this.handleEsc.bind(this);
+        document.addEventListener('keydown', this.handleEsc);
+
         this.setupEventListeners();
         this.loadExistingComments();
 
         console.log('ContextComments initialized');
     }
 
-    setupEscKeyListener() {
-        console.log('Setting up ESC key listener...');
-        
-        const handleEsc = (e) => {
-            console.log('Key pressed:', e.key);
+    handleEsc(e) {
+        if (e.key === 'Escape') {
+            console.log('ESC pressed, current count:', this.escPressCount);
             
-            if (e.key === 'Escape') {
-                console.log('ESC pressed, count:', this.escPressCount + 1);
-                this.escPressCount++;
-                
-                if (this.escTimeout) {
-                    clearTimeout(this.escTimeout);
-                }
-                
-                if (this.escPressCount === 2) {
-                    console.log('Double ESC detected!');
-                    this.hideAllPopups();
-                    this.escPressCount = 0;
-                }
-                
-                this.escTimeout = setTimeout(() => {
-                    console.log('Resetting ESC count');
-                    this.escPressCount = 0;
-                }, 500);
+            this.escPressCount++;
+            
+            if (this.escTimeout) {
+                clearTimeout(this.escTimeout);
             }
-        };
-
-        document.removeEventListener('keydown', handleEsc);
-        document.addEventListener('keydown', handleEsc);
-        
-        console.log('ESC key listener setup complete');
+            
+            if (this.escPressCount === 2) {
+                console.log('Double ESC detected, hiding popups');
+                this.hideAllPopups();
+                this.escPressCount = 0;
+            }
+            
+            this.escTimeout = setTimeout(() => {
+                this.escPressCount = 0;
+            }, 500);
+        }
     }
 
     hideAllPopups() {
