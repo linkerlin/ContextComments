@@ -240,6 +240,15 @@ class ContextComments {
         
         document.body.appendChild(popup);
         this.currentPopup = popup;
+
+        // 添加 ESC 键监听
+        const escListener = (e) => {
+            if (e.key === 'Escape') {
+                this.hideAllPopups();
+                document.removeEventListener('keydown', escListener);
+            }
+        };
+        document.addEventListener('keydown', escListener);
     }
 
     formatDate(dateString) {
