@@ -174,6 +174,23 @@ class ContextComments {
         document.body.appendChild(popup);
 
         const textarea = popup.querySelector('textarea');
+
+        // 添加点击外部区域的处理
+        const handleOutsideClick = (e) => {
+            if (!popup.contains(e.target)) {
+                // 检查评论框是否为空
+                if (!textarea.value.trim()) {
+                    popup.remove();
+                    document.removeEventListener('click', handleOutsideClick);
+                }
+            }
+        };
+
+        // 延迟添加事件监听器，避免触发当前的点击事件
+        setTimeout(() => {
+            document.addEventListener('click', handleOutsideClick);
+        }, 0);
+
         popup.querySelector('.submit-comment').addEventListener('click', () => {
             const comment = textarea.value.trim();
             if (comment) {
