@@ -40,25 +40,10 @@ class ContextComments {
             return;
         }
 
-        // 尝试从缓存加载
-        const cachedComments = localStorage.getItem(`comments_${this.postId}`);
-        if (cachedComments) {
-            // 10% 概率删除缓存
-            if (Math.random() < 0.1) {
-                localStorage.removeItem(`comments_${this.postId}`);
-            } else {
-                this.renderExistingComments(JSON.parse(cachedComments));
-                return;
-            }
-        }
-
-        // 如果没有缓存或缓存被删除，从服务器加载
         fetch(`${contextCommentsObj.ajaxurl}?action=get_context_comments&post_id=${this.postId}`)
             .then(response => response.json())
             .then(result => {
                 if (result.success && result.data) {
-                    // 缓存评论
-                    localStorage.setItem(`comments_${this.postId}`, JSON.stringify(result.data));
                     this.renderExistingComments(result.data);
                 }
             })
@@ -395,9 +380,6 @@ class ContextComments {
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                // 删除缓存，强制下次重新加载
-                localStorage.removeItem(`comments_${this.postId}`);
-                
                 // 创建高亮
                 const highlightHtml = `<span class="context-highlight" data-comment-id="${result.data.comment_id}" data-comment="${encodeURIComponent(result.data.comment)}">${result.data.context}</span>`;
                 const tempDiv = document.createElement('div');
