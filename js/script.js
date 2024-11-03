@@ -145,19 +145,8 @@ class ContextComments {
     }
 
     handleTextSelection(event, range, selectedText) {
-        console.log('Handling text selection, user logged in:', contextCommentsObj.isLoggedIn);
+        console.log('Creating comment input popup');
 
-        // 检查用户是否登录
-        if (!contextCommentsObj.isLoggedIn) {
-            // 保存当前 URL 到 localStorage，以便登录后返回
-            localStorage.setItem('contextCommentsReturnUrl', window.location.href);
-            
-            // 重定向到登录页面
-            window.location.href = contextCommentsObj.loginurl;
-            return;
-        }
-
-        // 以下是已登录用户的评论框逻辑
         const popup = document.createElement('div');
         popup.className = 'comment-input-popup';
         popup.innerHTML = `
@@ -174,19 +163,39 @@ class ContextComments {
         document.body.appendChild(popup);
 
         const textarea = popup.querySelector('textarea');
+        
+        let lastEscTime = 0;
+        const ESC_DOUBLE_PRESS_DELAY = 500;
 
-        // 添加点击外部区域的处理
+        const handleEscKey = (e) => {
+            console.log('Key pressed:', e.key);
+            if (e.key === 'Escape') {
+                const currentTime = new Date().getTime();
+                console.log('ESC pressed, time diff:', currentTime - lastEscTime);
+                
+                if (currentTime - lastEscTime < ESC_DOUBLE_PRESS_DELAY) {
+                    console.log('Double ESC detected, closing popup');
+                    popup.remove();
+                    document.removeEventListener('keydown', handleEscKey);
+                    document.removeEventListener('click', handleOutsideClick);
+                }
+                lastEscTime = currentTime;
+            }
+        };
+
+        document.addEventListener('keydown', handleEscKey);
+        console.log('ESC key listener added');
+
         const handleOutsideClick = (e) => {
             if (!popup.contains(e.target)) {
-                // 检查评论框是否为空
                 if (!textarea.value.trim()) {
                     popup.remove();
+                    document.removeEventListener('keydown', handleEscKey);
                     document.removeEventListener('click', handleOutsideClick);
                 }
             }
         };
 
-        // 延迟添加事件监听器，避免触发当前的点击事件
         setTimeout(() => {
             document.addEventListener('click', handleOutsideClick);
         }, 0);
@@ -197,30 +206,15 @@ class ContextComments {
                 this.saveComment(range, comment);
             }
             popup.remove();
+            document.removeEventListener('keydown', handleEscKey);
+            document.removeEventListener('click', handleOutsideClick);
         });
 
         popup.querySelector('.cancel-comment').addEventListener('click', () => {
             popup.remove();
+            document.removeEventListener('keydown', handleEscKey);
+            document.removeEventListener('click', handleOutsideClick);
         });
-
-        // 添加 ESC 键双击处理
-        let lastEscTime = 0;
-        const ESC_DOUBLE_PRESS_DELAY = 500; // 500ms 内的两次按键视为双击
-
-        const handleEscKey = (e) => {
-            if (e.key === 'Escape') {
-                const currentTime = new Date().getTime();
-                if (currentTime - lastEscTime < ESC_DOUBLE_PRESS_DELAY) {
-                    // 双击 ESC，关闭弹出框
-                    popup.remove();
-                    document.removeEventListener('keydown', handleEscKey);
-                    document.removeEventListener('click', handleOutsideClick);
-                }
-                lastEscTime = currentTime;
-            }
-        };
-
-        document.addEventListener('keydown', handleEscKey);
     }
 
     showCommentPopup(element, comment) {
