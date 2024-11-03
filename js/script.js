@@ -202,6 +202,25 @@ class ContextComments {
         popup.querySelector('.cancel-comment').addEventListener('click', () => {
             popup.remove();
         });
+
+        // 添加 ESC 键双击处理
+        let lastEscTime = 0;
+        const ESC_DOUBLE_PRESS_DELAY = 500; // 500ms 内的两次按键视为双击
+
+        const handleEscKey = (e) => {
+            if (e.key === 'Escape') {
+                const currentTime = new Date().getTime();
+                if (currentTime - lastEscTime < ESC_DOUBLE_PRESS_DELAY) {
+                    // 双击 ESC，关闭弹出框
+                    popup.remove();
+                    document.removeEventListener('keydown', handleEscKey);
+                    document.removeEventListener('click', handleOutsideClick);
+                }
+                lastEscTime = currentTime;
+            }
+        };
+
+        document.addEventListener('keydown', handleEscKey);
     }
 
     showCommentPopup(element, comment) {
