@@ -164,28 +164,27 @@ class ContextComments {
 
         const textarea = popup.querySelector('textarea');
         
-        let lastEscTime = 0;
+        // ESC 双击处理
+        let escPressCount = 0;
         const ESC_DOUBLE_PRESS_DELAY = 500;
 
         const handleEscKey = (e) => {
-            console.log('Key pressed:', e.key);
             if (e.key === 'Escape') {
-                const currentTime = new Date().getTime();
-                console.log('ESC pressed, time diff:', currentTime - lastEscTime);
-                
-                if (currentTime - lastEscTime < ESC_DOUBLE_PRESS_DELAY) {
-                    console.log('Double ESC detected, closing popup');
+                escPressCount++;
+                if (escPressCount === 2) {
                     popup.remove();
                     document.removeEventListener('keydown', handleEscKey);
                     document.removeEventListener('click', handleOutsideClick);
                 }
-                lastEscTime = currentTime;
+                setTimeout(() => {
+                    escPressCount = 0; // 重置计数器
+                }, ESC_DOUBLE_PRESS_DELAY);
             }
         };
 
         document.addEventListener('keydown', handleEscKey);
-        console.log('ESC key listener added');
 
+        // 点击外部区域处理
         const handleOutsideClick = (e) => {
             if (!popup.contains(e.target)) {
                 if (!textarea.value.trim()) {
@@ -196,10 +195,12 @@ class ContextComments {
             }
         };
 
+        // 延迟添加点击事件监听器
         setTimeout(() => {
             document.addEventListener('click', handleOutsideClick);
         }, 0);
 
+        // 提交按钮处理
         popup.querySelector('.submit-comment').addEventListener('click', () => {
             const comment = textarea.value.trim();
             if (comment) {
@@ -210,6 +211,7 @@ class ContextComments {
             document.removeEventListener('click', handleOutsideClick);
         });
 
+        // 取消按钮处理
         popup.querySelector('.cancel-comment').addEventListener('click', () => {
             popup.remove();
             document.removeEventListener('keydown', handleEscKey);
