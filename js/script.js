@@ -2,8 +2,11 @@ class ContextComments {
     constructor() {
         this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         this.currentPopup = null;
-        this.hoverTimer = null;
-        this.postId = this.getPostId();
+        this.escPressCount = 0;
+        this.escTimeout = null;
+        
+        // 添加全局 ESC 键监听
+        this.setupEscKeyListener();
 
         if (!this.contentContainer) {
             console.error('Content container not found');
@@ -17,6 +20,31 @@ class ContextComments {
 
         this.setupEventListeners();
         this.loadExistingComments();
+    }
+
+    setupEscKeyListener() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.escPressCount++;
+                
+                // 清除之前的超时
+                if (this.escTimeout) {
+                    clearTimeout(this.escTimeout);
+                }
+                
+                // 如果是双击 ESC
+                if (this.escPressCount === 2) {
+                    console.log('Double ESC detected, closing all popups');
+                    this.hideAllPopups();
+                    this.escPressCount = 0; // 重置计数
+                }
+                
+                // 设置新的超时
+                this.escTimeout = setTimeout(() => {
+                    this.escPressCount = 0; // 500ms 后重置计数
+                }, 500);
+            }
+        });
     }
 
     getPostId() {
