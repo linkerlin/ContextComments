@@ -194,20 +194,16 @@ class ContextComments {
         
         const popup = document.createElement('div');
         popup.className = 'comment-popup';
-
-        // 使用默认值处理可能缺失的作者信息
-        const author = comment.author || {
-            name: '匿名用户',
-            url: '#',
-            avatar: 'https://www.gravatar.com/avatar/?d=mp'
-        };
         
+        // 修改 popup 的 HTML 结构，让头像可点击
         popup.innerHTML = `
             <div class="comment-popup-content">
                 <div class="comment-header">
-                    <img class="author-avatar" src="${author.avatar}" alt="${author.name}" />
+                    <a href="${comment.author.url}" class="author-avatar-link" target="_blank">
+                        <img class="author-avatar" src="${comment.author.avatar}" alt="${comment.author.name}" />
+                    </a>
                     <div class="author-info">
-                        <a href="${author.url}" class="author-name" target="_blank">${author.name}</a>
+                        <a href="${comment.author.url}" class="author-name" target="_blank">${comment.author.name}</a>
                         ${comment.date ? `<span class="comment-date">${this.formatDate(comment.date)}</span>` : ''}
                     </div>
                 </div>
