@@ -4,7 +4,7 @@ class ContextComments {
         this.currentPopup = null;
         this.escPressCount = 0;
         this.escTimeout = null;
-        
+
         // 添加全局 ESC 键监听
         this.setupEscKeyListener();
 
@@ -26,24 +26,37 @@ class ContextComments {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.escPressCount++;
-                
+
                 // 清除之前的超时
                 if (this.escTimeout) {
                     clearTimeout(this.escTimeout);
                 }
-                
+
                 // 如果是双击 ESC
                 if (this.escPressCount === 2) {
                     console.log('Double ESC detected, closing all popups');
                     this.hideAllPopups();
                     this.escPressCount = 0; // 重置计数
                 }
-                
+
                 // 设置新的超时
                 this.escTimeout = setTimeout(() => {
                     this.escPressCount = 0; // 500ms 后重置计数
                 }, 500);
             }
+        });
+    }
+    
+    hideAllPopups() {
+        console.log('Hiding all popups...');
+        // 关闭当前弹出框
+        if (this.currentPopup) {
+            this.currentPopup.remove();
+            this.currentPopup = null;
+        }
+        // 关闭所有评论输入框
+        document.querySelectorAll('.comment-input-popup').forEach(popup => {
+            popup.remove();
         });
     }
 
