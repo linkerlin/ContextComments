@@ -188,8 +188,7 @@ class ContextComments {
     }
 
     showCommentPopup(element, comment) {
-        console.log('Showing comment popup:', comment);
-
+        console.log('Showing popup...');
         this.hideAllPopups();
         
         const popup = document.createElement('div');
@@ -244,7 +243,11 @@ class ContextComments {
         // 添加 ESC 键监听
         const escListener = (e) => {
             if (e.key === 'Escape') {
-                this.hideAllPopups();
+                console.log('ESC pressed');
+                if (this.currentPopup) {
+                    this.currentPopup.remove();
+                    this.currentPopup = null;
+                }
                 document.removeEventListener('keydown', escListener);
             }
         };
@@ -278,6 +281,7 @@ class ContextComments {
     }
 
     hideAllPopups() {
+        console.log('Hiding all popups...');
         if (this.currentPopup) {
             this.currentPopup.remove();
             this.currentPopup = null;
