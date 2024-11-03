@@ -1,63 +1,69 @@
 class ContextComments {
     constructor() {
+        console.log('Initializing ContextComments...');
         this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         this.currentPopup = null;
         this.escPressCount = 0;
         this.escTimeout = null;
 
-        // 添加全局 ESC 键监听
         this.setupEscKeyListener();
-
-        if (!this.contentContainer) {
-            console.error('Content container not found');
-            return;
-        }
-
-        console.log('ContextComments initialized with:', {
-            container: this.contentContainer,
-            postId: this.postId
-        });
-
         this.setupEventListeners();
         this.loadExistingComments();
+
+        console.log('ContextComments initialized');
     }
 
     setupEscKeyListener() {
-        document.addEventListener('keydown', (e) => {
+        console.log('Setting up ESC key listener...');
+        
+        const handleEsc = (e) => {
+            console.log('Key pressed:', e.key);
+            
             if (e.key === 'Escape') {
+                console.log('ESC pressed, count:', this.escPressCount + 1);
                 this.escPressCount++;
-
-                // 清除之前的超时
+                
                 if (this.escTimeout) {
                     clearTimeout(this.escTimeout);
                 }
-
-                // 如果是双击 ESC
+                
                 if (this.escPressCount === 2) {
-                    console.log('Double ESC detected, closing all popups');
+                    console.log('Double ESC detected!');
                     this.hideAllPopups();
-                    this.escPressCount = 0; // 重置计数
+                    this.escPressCount = 0;
                 }
-
-                // 设置新的超时
+                
                 this.escTimeout = setTimeout(() => {
-                    this.escPressCount = 0; // 500ms 后重置计数
+                    console.log('Resetting ESC count');
+                    this.escPressCount = 0;
                 }, 500);
             }
-        });
+        };
+
+        document.removeEventListener('keydown', handleEsc);
+        document.addEventListener('keydown', handleEsc);
+        
+        console.log('ESC key listener setup complete');
     }
-    
+
     hideAllPopups() {
-        console.log('Hiding all popups...');
-        // 关闭当前弹出框
+        console.log('Attempting to hide all popups...');
+        
         if (this.currentPopup) {
+            console.log('Found current popup, removing it');
             this.currentPopup.remove();
             this.currentPopup = null;
         }
-        // 关闭所有评论输入框
-        document.querySelectorAll('.comment-input-popup').forEach(popup => {
+        
+        const allPopups = document.querySelectorAll('.comment-input-popup, .comment-popup');
+        console.log('Found popups:', allPopups.length);
+        
+        allPopups.forEach(popup => {
+            console.log('Removing popup:', popup);
             popup.remove();
         });
+        
+        console.log('All popups removed');
     }
 
     getPostId() {
@@ -489,7 +495,8 @@ class ContextComments {
     // ... 其他现有方法 ...
 }
 
-// 确保在 DOM 加载完成后初始化
+// 确保类被正确实例化
 document.addEventListener('DOMContentLoaded', () => {
-    new ContextComments();
+    console.log('DOM loaded, creating ContextComments instance');
+    window.contextCommentsInstance = new ContextComments();
 }); 
