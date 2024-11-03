@@ -154,6 +154,13 @@ class ContextComments {
         $author_name = $comment->comment_author;
         $author_url = $author_id ? get_author_posts_url($author_id) : $comment->comment_author_url;
         
+        // 设置头像缓存控制头
+        header('Cache-Control: public, max-age=2592000'); // 30天缓存
+        
+        $avatar_url = get_avatar_url($author_id ? $author_id : $comment->comment_author_email, array(
+            'size' => 32
+        ));
+
         $comment_data = array(
             'id' => $comment->comment_ID,
             'comment' => $comment->comment_content,
@@ -161,7 +168,7 @@ class ContextComments {
             'author' => array(
                 'name' => $author_name,
                 'url' => $author_url,
-                'avatar' => get_avatar_url($author_id ? $author_id : $comment->comment_author_email, array('size' => 32))
+                'avatar' => $avatar_url
             )
         );
 
