@@ -1,65 +1,22 @@
 class ContextComments {
     constructor() {
-        console.log('Initializing ContextComments...');
         this.contentContainer = document.querySelector('.entry-content, .post-content, article, .context-comments-content');
         this.currentPopup = null;
-        this.escPressCount = 0;
-        this.escTimeout = null;
-
-        this.handleEsc = this.handleEsc.bind(this);
-        document.addEventListener('keydown', this.handleEsc);
+        this.hoverTimer = null;
+        this.postId = this.getPostId();
 
         if (!this.contentContainer) {
             console.error('Content container not found');
             return;
         }
 
+        console.log('ContextComments initialized with:', {
+            container: this.contentContainer,
+            postId: this.postId
+        });
+
         this.setupEventListeners();
         this.loadExistingComments();
-
-        console.log('ContextComments initialized');
-    }
-
-    handleEsc(e) {
-        if (e.key === 'Escape') {
-            console.log('ESC pressed, current count:', this.escPressCount);
-            
-            this.escPressCount++;
-            
-            if (this.escTimeout) {
-                clearTimeout(this.escTimeout);
-            }
-            
-            if (this.escPressCount === 2) {
-                console.log('Double ESC detected, hiding popups');
-                this.hideAllPopups();
-                this.escPressCount = 0;
-            }
-            
-            this.escTimeout = setTimeout(() => {
-                this.escPressCount = 0;
-            }, 500);
-        }
-    }
-
-    hideAllPopups() {
-        console.log('Attempting to hide all popups...');
-        
-        if (this.currentPopup) {
-            console.log('Found current popup, removing it');
-            this.currentPopup.remove();
-            this.currentPopup = null;
-        }
-        
-        const allPopups = document.querySelectorAll('.comment-input-popup, .comment-popup');
-        console.log('Found popups:', allPopups.length);
-        
-        allPopups.forEach(popup => {
-            console.log('Removing popup:', popup);
-            popup.remove();
-        });
-        
-        console.log('All popups removed');
     }
 
     getPostId() {
@@ -78,7 +35,6 @@ class ContextComments {
     }
 
     loadExistingComments() {
-        console.log('Loading existing comments...');
         if (!this.postId) {
             console.error('Post ID not found');
             return;
@@ -88,7 +44,6 @@ class ContextComments {
             .then(response => response.json())
             .then(result => {
                 if (result.success && result.data) {
-                    console.log('Comments loaded:', result.data);
                     this.renderExistingComments(result.data);
                 }
             })
@@ -190,8 +145,19 @@ class ContextComments {
     }
 
     handleTextSelection(event, range, selectedText) {
-        console.log('Creating comment input popup');
+        console.log('Handling text selection, user logged in:', contextCommentsObj.isLoggedIn);
 
+        // 检查用户是否登录
+        if (!contextCommentsObj.isLoggedIn) {
+            // 保存当前 URL 到 localStorage，以便登录后返回
+            localStorage.setItem('contextCommentsReturnUrl', window.location.href);
+            
+            // 重定向到登录页面
+            window.location.href = contextCommentsObj.loginurl;
+            return;
+        }
+
+        // 以下是已登录用户的评论框逻辑
         const popup = document.createElement('div');
         popup.className = 'comment-input-popup';
         popup.innerHTML = `
@@ -208,78 +174,40 @@ class ContextComments {
         document.body.appendChild(popup);
 
         const textarea = popup.querySelector('textarea');
-        
-        // ESC 双击处理
-        let escPressCount = 0;
-        const ESC_DOUBLE_PRESS_DELAY = 500;
-
-        const handleEscKey = (e) => {
-            if (e.key === 'Escape') {
-                escPressCount++;
-                if (escPressCount === 2) {
-                    popup.remove();
-                    document.removeEventListener('keydown', handleEscKey);
-                    document.removeEventListener('click', handleOutsideClick);
-                }
-                setTimeout(() => {
-                    escPressCount = 0; // 重置计数器
-                }, ESC_DOUBLE_PRESS_DELAY);
-            }
-        };
-
-        document.addEventListener('keydown', handleEscKey);
-
-        // 点击外部区域处理
-        const handleOutsideClick = (e) => {
-            if (!popup.contains(e.target)) {
-                if (!textarea.value.trim()) {
-                    popup.remove();
-                    document.removeEventListener('keydown', handleEscKey);
-                    document.removeEventListener('click', handleOutsideClick);
-                }
-            }
-        };
-
-        // 延迟添加点击事件监听器
-        setTimeout(() => {
-            document.addEventListener('click', handleOutsideClick);
-        }, 0);
-
-        // 提交按钮处理
         popup.querySelector('.submit-comment').addEventListener('click', () => {
             const comment = textarea.value.trim();
             if (comment) {
                 this.saveComment(range, comment);
             }
             popup.remove();
-            document.removeEventListener('keydown', handleEscKey);
-            document.removeEventListener('click', handleOutsideClick);
         });
 
-        // 取消按钮处理
         popup.querySelector('.cancel-comment').addEventListener('click', () => {
             popup.remove();
-            document.removeEventListener('keydown', handleEscKey);
-            document.removeEventListener('click', handleOutsideClick);
         });
     }
 
     showCommentPopup(element, comment) {
         console.log('Showing comment popup:', comment);
+
         this.hideAllPopups();
         
         const popup = document.createElement('div');
         popup.className = 'comment-popup';
+
+        // 使用默认值处理可能缺失的作者信息
+        const author = comment.author || {
+            name: '匿名用户',
+            url: '#',
+            avatar: 'https://www.gravatar.com/avatar/?d=mp'
+        };
         
-        // 修改 popup 的 HTML 结构，让头像可点击
         popup.innerHTML = `
             <div class="comment-popup-content">
                 <div class="comment-header">
-                    <a href="${comment.author.url}" class="author-avatar-link" target="_blank">
-                        <img class="author-avatar" src="${comment.author.avatar}" alt="${comment.author.name}" />
-                    </a>
+                    <img class="author-avatar" src="${author.avatar}" alt="${author.name}" />
                     <div class="author-info">
-                        <a href="${comment.author.url}" class="author-name" target="_blank">${comment.author.name}</a>
+                        <a href="${author.url}" class="author-name" target="_blank">${author.name}</a>
                         ${comment.date ? `<span class="comment-date">${this.formatDate(comment.date)}</span>` : ''}
                     </div>
                 </div>
@@ -312,19 +240,6 @@ class ContextComments {
         
         document.body.appendChild(popup);
         this.currentPopup = popup;
-
-        // 添加 ESC 键监听
-        const escListener = (e) => {
-            if (e.key === 'Escape') {
-                console.log('ESC pressed');
-                if (this.currentPopup) {
-                    this.currentPopup.remove();
-                    this.currentPopup = null;
-                }
-                document.removeEventListener('keydown', escListener);
-            }
-        };
-        document.addEventListener('keydown', escListener);
     }
 
     formatDate(dateString) {
@@ -354,7 +269,6 @@ class ContextComments {
     }
 
     hideAllPopups() {
-        console.log('Hiding all popups...');
         if (this.currentPopup) {
             this.currentPopup.remove();
             this.currentPopup = null;
@@ -369,22 +283,36 @@ class ContextComments {
 
     renderExistingComments(comments) {
         console.log('Rendering comments:', comments);
+
         if (!this.contentContainer) {
             console.error('Content container not found');
             return;
         }
 
         let content = this.contentContainer.innerHTML;
+        console.log('Original content length:', content.length);
         
         comments.forEach(comment => {
             try {
-                const decodedContext = decodeURIComponent(comment.context);
+                const decodedContext = decodeURIComponent(JSON.parse('"' + comment.context.replace(/\"/g, '\\"') + '"'));
                 console.log('Looking for text:', decodedContext);
+
+                // 创建一个正则表达式来匹配文本，忽略 HTML 标签
+                const escapedContext = decodedContext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedContext, 'g');
 
                 if (content.includes(decodedContext)) {
                     console.log('Found exact match');
                     const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${decodedContext}</span>`;
                     content = content.replace(decodedContext, highlightHtml);
+                } else {
+                    console.log('No exact match, trying fuzzy match');
+                    const bestMatch = this.findBestMatch(decodedContext, content);
+                    if (bestMatch) {
+                        console.log('Found fuzzy match:', bestMatch);
+                        const highlightHtml = `<span class="context-highlight" data-comment-id="${comment.id}" data-comment="${encodeURIComponent(comment.comment)}">${bestMatch.text}</span>`;
+                        content = content.replace(bestMatch.text, highlightHtml);
+                    }
                 }
             } catch (e) {
                 console.error('Error processing comment:', e);
@@ -393,6 +321,48 @@ class ContextComments {
 
         this.contentContainer.innerHTML = content;
         console.log('Highlights added:', this.contentContainer.querySelectorAll('.context-highlight').length);
+    }
+
+    findBestMatch(searchText, content) {
+        console.log('Finding best match for:', searchText);
+        
+        const searchChars = Array.from(searchText);
+        const windowSize = searchChars.length;
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        const SIMILARITY_THRESHOLD = 0.8; // 80% 相似度阈值
+
+        for (let i = 0; i < content.length - windowSize + 1; i++) {
+            const windowText = content.substr(i, windowSize);
+            const similarity = this.calculateSimilarity(searchText, windowText);
+
+            if (similarity > SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = {
+                    text: windowText,
+                    similarity: similarity
+                };
+                console.log('New best match found:', {
+                    text: windowText,
+                    similarity: similarity
+                });
+            }
+        }
+
+        return bestMatch;
+    }
+
+    calculateSimilarity(str1, str2) {
+        if (str1.length !== str2.length) return 0;
+
+        let matches = 0;
+        for (let i = 0; i < str1.length; i++) {
+            if (str1[i] === str2[i]) {
+                matches++;
+            }
+        }
+
+        return matches / str1.length;
     }
 
     saveComment(range, comment) {
@@ -433,8 +403,7 @@ class ContextComments {
     // ... 其他现有方法 ...
 }
 
-// 确保类被正确实例化
+// 确保在 DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, creating ContextComments instance');
-    window.contextCommentsInstance = new ContextComments();
+    new ContextComments();
 }); 
