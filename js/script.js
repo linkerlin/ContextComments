@@ -51,6 +51,7 @@ class ContextComments {
     }
 
     setupEventListeners() {
+	let justOpenedPopup = false; // 标记是否刚刚打开了弹出框
         // 处理选择文本
         this.contentContainer.addEventListener('mouseup', (e) => {
             // 忽略点击已高亮文本的情况
@@ -65,11 +66,17 @@ class ContextComments {
             if (selectedText) {
                 const range = selection.getRangeAt(0);
                 this.handleTextSelection(e, range, selectedText);
+		justOpenedPopup = true; // 弹出框刚刚被打开
+                setTimeout(() => justOpenedPopup = false, 1000); // 100 毫秒后重置标记
+		e.stopPropagation();  // 阻止事件冒泡，避免触发 document 的 click 事件
             }
         });
 
         // 处理高亮文本的点击和悬停
         this.contentContainer.addEventListener('click', (e) => {
+	    if (justOpenedPopup) {
+                return; // 如果刚刚打开了弹出框，忽略此次点击
+            }
             const highlight = e.target.closest('.context-highlight');
             if (highlight) {
                 e.preventDefault();
@@ -108,9 +115,27 @@ class ContextComments {
 
         // 点击其他地方关闭弹出框
         document.addEventListener('click', (e) => {
-            if (this.currentPopup && 
-                !this.currentPopup.contains(e.target) && 
-                !e.target.closest('.context-highlight')) {
+		// 使用 setTimeout 延迟执行，确保弹出框创建后不会立刻被隐藏
+            setTimeout(() => {
+                if (this.currentPopup &&
+                    !this.currentPopup.contains(e.target) &&
+                    !e.target.closest('.context-highlight')) {
+			// 获取弹出框中的文本框（textarea）
+                    const textarea = this.currentPopup.querySelector('textarea');
+
+                    // 仅当文本框为空时才关闭弹出框
+                    if (textarea && textarea.value.trim() === '') {
+                        this.hideAllPopups();
+                    } else {
+                        console.log('Popup not closed because the textarea is not empty.');
+                    }
+                }
+            }, 10000); // 延迟 100 毫秒
+        });
+	// 添加 ESC 键关闭弹出框的功能
+        document.addEventListener('keydown', (e) => {
+	    console.log('Key pressed:', e.key); // 记录按下的键
+            if (e.key === 'Escape') {
                 this.hideAllPopups();
             }
         });
@@ -172,8 +197,19 @@ class ContextComments {
         popup.style.left = `${rect.left}px`;
 
         document.body.appendChild(popup);
-
+	this.currentPopup = popup;
+	// 阻止弹出框的点击事件冒泡到 document
+        popup.addEventListener('mouseup', (e) => {
+            e.stopPropagation(); // 阻止冒泡，防止 document click 事件关闭弹出框
+        });
         const textarea = popup.querySelector('textarea');
+	// 添加 keydown 监听器，处理 ESC 键
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                console.log('ESC pressed in textarea');
+                popup.remove(); // 关闭评论框
+            }
+        });
         popup.querySelector('.submit-comment').addEventListener('click', () => {
             const comment = textarea.value.trim();
             if (comment) {
@@ -236,6 +272,12 @@ class ContextComments {
         
         document.body.appendChild(popup);
         this.currentPopup = popup;
+	// 10秒后自动关闭弹出框
+        setTimeout(() => {
+            if (this.currentPopup === popup) {  // 确保当前弹出的框是这个框
+                this.hideAllPopups();  // 调用隐藏函数
+            }
+        }, 10000);  // 10秒 = 10000毫秒
     }
 
     formatDate(dateString) {
@@ -266,11 +308,13 @@ class ContextComments {
 
     hideAllPopups() {
         if (this.currentPopup) {
+            console.log('Hiding popup:', this.currentPopup); // 添加日志，确认当前的弹出框
             this.currentPopup.remove();
-            this.currentPopup = null;
+            this.currentPopup = null; // 确保 this.currentPopup 被清空
+        } else {
+            console.log('No popup to hide');
         }
     }
-
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
